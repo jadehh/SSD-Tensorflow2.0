@@ -4,10 +4,22 @@ vgg 分类网络
 Conv2D 层
 MaxPool 层
 在 conv5 之后接上两个全连接层，最后softmax进行分类
-
 ```
 python nets/vgg.py
 ```
+```
+model.fit_generator(generator=train_batch_generator,
+                                  steps_per_epoch=120,
+                                  epochs=10,
+                                  verbose=1,
+                                  validation_data=test_batch_generator,
+                                  validation_steps=1)
+```
+在测试集上的结果能达到90%
+
+现在讲全连接层改成卷积层，试下效果
+
+
 ssd 对 vgg 做了一点变化
 
 在fc6层和fc7层与以往的VGG不同的是，使用卷积层来代替以前的全连接层
