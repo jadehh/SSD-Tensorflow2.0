@@ -16,10 +16,18 @@ model.fit_generator(generator=train_batch_generator,
                                   validation_steps=1)
 ```
 在测试集上的结果能达到90%
-
 现在讲全连接层改成卷积层，试下效果
 
+```
 
+self.fc6 = Conv2D(4096,(7,7),padding="valid",activation='relu',name='conv6')
+self.dropout6 = Dropout(0.5)
+
+self.fc7 = Conv2D(4096,(1,1),activation='relu',name='conv7')
+self.dropout7 = Dropout(0.5)
+
+self.fc8 = Conv2D(classes,(1,1),padding='same',activation=None,name='conv8')
+```
 ssd 对 vgg 做了一点变化
 
 在fc6层和fc7层与以往的VGG不同的是，使用卷积层来代替以前的全连接层

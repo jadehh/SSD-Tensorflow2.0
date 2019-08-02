@@ -176,9 +176,9 @@ def train():
     train_batch_generator = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_train.tfrecord")
     test_batch_generator = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord")
     # x_train,y_train,x_test,y_test = loadDataSet()
-    model = VGGNetConv(classes=10)
-    model.load_weights("VGGNetConv")
-    model.compile(optimizer=keras.optimizers.Adam(lr=0.001),
+    model = VGGNetDense(classes=10)
+    # model.load_weights("VGGNetDense")
+    model.compile(optimizer=keras.optimizers.Adam(lr=0.0001),
                   # loss=keras.losses.CategoricalCrossentropy(),  # 需要使用to_categorical
                   loss=keras.losses.SparseCategoricalCrossentropy(),
                   metrics=['accuracy'])
@@ -195,10 +195,10 @@ def train():
 
 def predict():
     # 读取保存的模型参数
-    new_model = VGGNet(classes=10)
+    new_model = VGGNetDense(classes=10)
     # new_model.train_on_batch(x_train[:1], y_train[:1])
-    new_model.load_weights('VGG')
-    test_generator = loadClassifyTFRecord("/home/jade/Data/TFRecords/sdfgoods10_test.tfrecord",repeat=False)
+    new_model.load_weights('VGGNetDense')
+    test_generator = loadClassifyTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord",repeat=False)
     num = 0
     correct = 0
     while (True):
@@ -207,13 +207,62 @@ def predict():
             new_predictions = new_model.predict(x_test)
             for i in range(new_predictions.shape[0]):
                 num = num + 1
-                print(np.argmax(new_predictions[i]),y_test[i].numpy())
+                # print(np.argmax(new_predictions[i]),y_test[i].numpy())
                 if np.argmax(new_predictions[i]) == y_test[i].numpy():
                     correct = correct + 1
 
         except:
             break
     print(correct/float(num))
+
+
+def train2():
+    model = VGGNetDense(classes=10)
+    train_ds = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_train.tfrecord",repeat=False)
+    test_ds = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord",repeat=False)
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+
+    optimizer = tf.keras.optimizers.Adam(0.0001)
+
+    train_loss = tf.keras.metrics.Mean(name='train_loss')
+    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+
+    test_loss = tf.keras.metrics.Mean(name='test_loss')
+    test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
+
+    @tf.function
+    def train_step(images, labels):
+        with tf.GradientTape() as tape:
+            predictions = model(images)
+            loss = loss_object(labels, predictions)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        train_loss(loss)
+        train_accuracy(labels, predictions)
+
+    @tf.function
+    def test_step(images, labels):
+        predictions = model(images)
+        t_loss = loss_object(labels, predictions)
+
+        test_loss(t_loss)
+        test_accuracy(labels, predictions)
+
+    EPOCHS = 10
+
+    for epoch in range(EPOCHS):
+        for images, labels in train_ds:
+            train_step(images, labels)
+            template = 'Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}'
+            print(template.format(epoch + 1,
+                              train_loss.result(),
+                              train_accuracy.result() * 100,
+                              test_loss.result(),
+                              test_accuracy.result() * 100))
+
+        for test_images, test_labels in test_ds:
+            test_step(test_images, test_labels)
 
 
 
@@ -224,5 +273,6 @@ def predict():
 
 if __name__ == '__main__':
     # createTFRecord()
-    train()
+    # train()
+    predict()
     # predict()
