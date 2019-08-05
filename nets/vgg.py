@@ -18,9 +18,9 @@ import numpy as np
 from jade import *
 from jade.jadeTFRecords import *
 
-class VGGNetDense(Model):
+class VGGNet16(Model):
     def __init__(self, classes=10):
-        super(VGGNetDense, self).__init__()
+        super(VGGNet16, self).__init__()
         # conv1 两次卷积 + MaxPool
         self.conv1_1 = Conv2D(64, (3, 3), padding="same", activation='relu', name="conv1_1")
         self.conv1_2 = Conv2D(64, (3, 3), padding="same", activation='relu', name="conv1_2")
@@ -170,13 +170,14 @@ class VGGNetConv(Model):
 def LoadTFRecord(tfrecord_path, batch_size=32, shuffle=True,repeat=True):
     return loadClassifyTFRecord(tfrecord_path, batch_size, shuffle,repeat)
 
-def createTFRecord():
-    CreateClassTFRecorder("/home/jade/Data/sdfgoods10_224","sdfgoods10_224")
-def train():
-    train_batch_generator = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_train.tfrecord")
-    test_batch_generator = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord")
+def createTFRecord(path,datasetname):
+    CreateClassTFRecorder(path,datasetname)
+
+def train(train_tfrecord_path,test_tfrecord_path,num_classes=10):
+    train_batch_generator = LoadTFRecord(train_tfrecord_path)
+    test_batch_generator = LoadTFRecord(test_tfrecord_path)
     # x_train,y_train,x_test,y_test = loadDataSet()
-    model = VGGNetDense(classes=10)
+    model = VGG16(classes=num_classes)
     # model.load_weights("VGGNetDense")
     model.compile(optimizer=keras.optimizers.Adam(lr=0.0001),
                   # loss=keras.losses.CategoricalCrossentropy(),  # 需要使用to_categorical
@@ -195,7 +196,7 @@ def train():
 
 def predict():
     # 读取保存的模型参数
-    new_model = VGGNetDense(classes=10)
+    new_model = VGG16(classes=10)
     # new_model.train_on_batch(x_train[:1], y_train[:1])
     new_model.load_weights('VGGNetDense')
     test_generator = loadClassifyTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord",repeat=False)
@@ -217,7 +218,7 @@ def predict():
 
 
 def train2():
-    model = VGGNetDense(classes=10)
+    model = VGG16(classes=10)
     train_ds = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_train.tfrecord",repeat=False)
     test_ds = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord",repeat=False)
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
@@ -272,7 +273,9 @@ def train2():
 
 
 if __name__ == '__main__':
-    # createTFRecord()
-    # train()
-    predict()
+    #VOCTOClassify("/media/jade/119f84e1-83d3-44cc-98c5-b52551f23158/home/jade/Data/VOCdevkit/VOC2012")
+    #XMLTOPROTXT("/home/jade/Data/VOCdevkit/voc.xlsx","VOC")
+    # createTFRecord("/home/jade/Data/VOCdevkit/Classify","VOC")
+    train("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord","/home/jade/Data/VOCdevkit/TFRecords/VOC_test.tfrecord")
+    # predict()
     # predict()

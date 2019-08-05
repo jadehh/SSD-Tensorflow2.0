@@ -3,7 +3,8 @@
 vgg 分类网络
 Conv2D 层
 MaxPool 层
-在 conv5 之后接上两个全连接层，最后softmax进行分类
+在 conv5 之后接上flatten 后接上三个全连接层，
+前面连个激活函数为relu,最后一层的激活函数为softmax
 ```
 python nets/vgg.py
 ```
@@ -19,7 +20,6 @@ model.fit_generator(generator=train_batch_generator,
 现在讲全连接层改成卷积层，试下效果
 
 ```
-
 self.fc6 = Conv2D(4096,(7,7),padding="valid",activation='relu',name='conv6')
 self.dropout6 = Dropout(0.5)
 
