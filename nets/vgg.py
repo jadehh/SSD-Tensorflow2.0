@@ -177,7 +177,7 @@ def train(train_tfrecord_path,test_tfrecord_path,num_classes=10):
     train_batch_generator = LoadTFRecord(train_tfrecord_path)
     test_batch_generator = LoadTFRecord(test_tfrecord_path)
     # x_train,y_train,x_test,y_test = loadDataSet()
-    model = VGG16(classes=num_classes)
+    model = VGGNet16(classes=num_classes)
     # model.load_weights("VGGNetDense")
     model.compile(optimizer=keras.optimizers.Adam(lr=0.0001),
                   # loss=keras.losses.CategoricalCrossentropy(),  # 需要使用to_categorical
@@ -273,9 +273,10 @@ def train2():
 
 
 if __name__ == '__main__':
+    #ResizeClassifyDataset("/home/jade/Data/VOCdevkit/Classify",224)
     #VOCTOClassify("/media/jade/119f84e1-83d3-44cc-98c5-b52551f23158/home/jade/Data/VOCdevkit/VOC2012")
     #XMLTOPROTXT("/home/jade/Data/VOCdevkit/voc.xlsx","VOC")
-    # createTFRecord("/home/jade/Data/VOCdevkit/Classify","VOC")
-    train("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord","/home/jade/Data/VOCdevkit/TFRecords/VOC_test.tfrecord")
+    #createTFRecord("/home/jade/Data/VOCdevkit/Classify_resize","VOC")
+    train("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord","/home/jade/Data/VOCdevkit/TFRecords/VOC_test.tfrecord",num_classes=20)
     # predict()
     # predict()
