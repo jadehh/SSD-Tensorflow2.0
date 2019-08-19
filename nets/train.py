@@ -23,30 +23,28 @@ class TrainModel():
         self.classify_path = args.classify_path
         self.num_classes = args.num_classes
         self.dataset_name = args.dataset_name
-        self.train_num = int(len(GetLabelAndImagePath("/home/jade/Data/VOCdevkit/Classify")) * 0.8 / self.batch_size)
-        self.test_num = int(len(GetLabelAndImagePath("/home/jade/Data/VOCdevkit/Classify")) * 0.2 / self.batch_size)
+        self.train_num = int(len(GetLabelAndImagePath(args.classify_path)) * 0.9 / self.batch_size)
+        self.test_num = int(len(GetLabelAndImagePath(args.classify_path)) * 0.1 / self.batch_size)
         self.epochs = 50
-        self.learning_rate = 0.001
+        self.learning_rate = 0.00001
         self.init_net()
         self.init_loss()
 
     def init_net(self):
         if self.model_name == "vgg":
             self.model = VGGNet16(self.num_classes)
-
-        # if self.checkpoint_path:
-            # self.model.build(input_shape=(self.batch_size,224,224,3))
-            # for layers in self.model.layers[:-1]:
-            #     layers.trainable = False
-            # self.model.load_weights(self.checkpoint_path)
-
-
+            self.model.build(input_shape=(self.batch_size,224,224,3))
+        if self.checkpoint_path:
+            self.model.load_weights(self.checkpoint_path)
 
     def init_loss(self):
         self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
-        self.train_loss = tf.keras.metrics.Mean(name="train_loss")
-        self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name="train_accuracy")
-        self.optimizer = tf.keras.optimizers.SGD(lr=self.learning_rate,decay=self.learning_rate / self.epochs)
+
+        self.optimizer = tf.keras.optimizers.Adam()
+
+        self.train_loss = tf.keras.metrics.Mean(name='train_loss')
+        self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+
         self.test_loss = tf.keras.metrics.Mean(name='test_loss')
         self.test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
 
@@ -65,8 +63,8 @@ class TrainModel():
         self.test_loss(t_loss)
         self.test_accuracy(labels, predictions)
     def loadData(self):
-        train_ds = LoadClassifyTFRecord(self.train_path, self.batch_size, shuffle=True, repeat=True, is_train=True)
-        test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=False,repeat=True,is_train=False)
+        train_ds = LoadClassifyTFRecord(self.train_path, self.batch_size, shuffle=True, repeat=False, is_train=True)
+        test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=False,is_train=False)
         return train_ds,test_ds
 
 
@@ -78,32 +76,43 @@ class TrainModel():
             train_processbar = ProcessBar()
             train_processbar.count = self.train_num
             for images, labels in train_ds:
-                K.set_value(self.optimizer.lr,self.learning_rate*0.1)
+                K.set_value(self.optimizer.lr,self.learning_rate)
                 train_processbar.start_time = time.time()
                 self.train_step(images, labels)
                 template = 'Training Epoch: {} || learning rate: {} || Loss: {} || Accuracy: {}%'
                 NoLinePrint(template.format(epoch + 1,
-                                            format(self.optimizer.lr.numpy(), '.4f'),
+                                            format(self.optimizer.lr.numpy(), '.5f'),
                                             format(self.train_loss.result(), '.2f'),
                                             format(self.train_accuracy.result() * 100, '.2f')), train_processbar)
 
             print("")
-            if (epoch + 1) % 10 == 0 and epoch != 0:
-                test_processbar = ProcessBar()
-                test_processbar.count = self.test_num
-                for test_images, test_labels in test_ds:
-                    self.test_step(test_images, test_labels)
-                    test_processbar.start_time = time.time()
-                    template = 'Testing  Epoch: {} || Loss: {} || Accuracy: {}%'
-                    NoLinePrint(template.format(epoch + 1,
+            test_processbar = ProcessBar()
+            test_processbar.count = self.test_num
+            for test_images, test_labels in test_ds:
+                test_processbar.start_time = time.time()
+                self.test_step(test_images, test_labels)
+
+                template = 'Testing  Epoch: {} || Loss: {} || Accuracy: {}%'
+                NoLinePrint(template.format(epoch + 1,
                                                 format(self.test_loss.result(), '.2f'),
                                                 format(self.test_accuracy.result() * 100, '.2f')), test_processbar)
-                print("")
+            print("")
 
-        save_path = CreateSavePath("/home/jade/Models/"+self.dataset_name+"Classify")
+        save_path = CreateSavePath("/home/jade/Models/"+self.dataset_name+"Classify/")
         self.model.summary()
         self.model.save_weights(save_path + self.dataset_name + '_vgg16net' + "_" + GetToday(), save_format='tf')
+    def evaluate(self):
+        test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=False,is_train=False)
 
+        test_processbar = ProcessBar()
+        test_processbar.count = self.test_num
+        for test_images, test_labels in test_ds:
+            test_processbar.start_time = time.time()
+            self.test_step(test_images, test_labels)
+
+            template = 'Testing || Loss: {} || Accuracy: {}%'
+            NoLinePrint(template.format(format(self.test_loss.result(), '.2f'),
+                                        format(self.test_accuracy.result() * 100, '.2f')), test_processbar)
     def lr_schedule(self,epoch):
         if epoch < 10:
             return 0.0001

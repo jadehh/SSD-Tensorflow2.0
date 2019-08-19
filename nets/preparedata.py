@@ -7,7 +7,7 @@
 from jade import *
 from datasetopeation.jadeClassifyTFRecords import CreateClassifyTFRecorder
 def createDataSet():
-    XMLTOPROTXT("/home/jade/Data/sdfgoods/sdfgoods10.xlsx",protxt_name="sdfgoods")
+    #XMLTOPROTXT("/home/jade/Data/sdfgoods/sdfgoods10.xlsx",protxt_name="sdfgoods")
     CreateClassifyTFRecorder("/home/jade/Data/sdfgoods/sdfgoods10","sdfgoods","/home/jade/Data/sdfgoods/sdfgoods.prototxt")
 
 

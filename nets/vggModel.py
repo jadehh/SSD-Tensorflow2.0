@@ -38,7 +38,7 @@ if __name__ == '__main__':
     paraser = argparse.ArgumentParser(description="VOC Classify")
     # genearl
     paraser.add_argument("--model_path",
-                         default="/home/jade/Models/sdfgoodsClassify/sdfgoods_vgg16net_2019-08-16.h5",
+                         default="/home/jade/Models/SdfClassify/sdfgoodsClassifysdfgoods_vgg16net_2019-08-19",
                          help="path to load model")
     paraser.add_argument("--prototxt_path", default="/home/jade/Data/sdfgoods/sdfgoods.prototxt", help="path to labels")
     args = paraser.parse_args()
