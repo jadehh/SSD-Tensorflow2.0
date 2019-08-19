@@ -7,16 +7,12 @@
 
 import tensorflow as tf
 from tensorflow.python.keras.layers import *
-from tensorflow.python.keras import Model, optimizers
-from tensorflow.python.keras.models import load_model
-from tensorflow.python.keras.datasets import cifar100
-from tensorflow.python.keras.applications.vgg16 import VGG16
-import cv2
+from tensorflow.python.keras import Model
+from jade import *
 
 from tensorflow.python import keras
-import numpy as np
-from jade import *
-from jade.jadeTFRecords import *
+
+from datasetopeation.jadeClassifyTFRecords import LoadClassifyTFRecord,CreateClassifyTFRecorder
 
 class VGGNet16(Model):
     def __init__(self, classes=10):
@@ -167,25 +163,26 @@ class VGGNetConv(Model):
         return x
 
 
-def LoadTFRecord(tfrecord_path, batch_size=32, shuffle=True,repeat=True):
-    return loadClassifyTFRecord(tfrecord_path, batch_size, shuffle,repeat)
+def LoadTFRecord(tfrecord_path, batch_size=32, shuffle=True,repeat=True,is_train=True):
+    return loadClassifyTFRecord(tfrecord_path, batch_size, shuffle,repeat,is_train=is_train)
 
-def createTFRecord(path,datasetname):
-    CreateClassTFRecorder(path,datasetname)
+def createTFRecord(path,datasetname,proto_txt_path):
+    CreateClassifyTFRecorder(path,datasetname,proto_txt_path)
 
 def train(train_tfrecord_path,test_tfrecord_path,num_classes=10):
-    train_batch_generator = LoadTFRecord(train_tfrecord_path)
-    test_batch_generator = LoadTFRecord(test_tfrecord_path)
+    train_batch_generator = LoadTFRecord(train_tfrecord_path,batch_size=8)
+    test_batch_generator = LoadTFRecord(test_tfrecord_path,batch_size=8)
+
+
     # x_train,y_train,x_test,y_test = loadDataSet()
     model = VGGNet16(classes=num_classes)
-    # model.load_weights("VGGNetDense")
-    model.compile(optimizer=keras.optimizers.Adam(lr=0.0001),
-                  # loss=keras.losses.CategoricalCrossentropy(),  # 需要使用to_categorical
+    # # model.load_weights("VGGNetDense")
+    model.compile(optimizer=keras.optimizers.Adam(lr=0.001),
                   loss=keras.losses.SparseCategoricalCrossentropy(),
                   metrics=['accuracy'])
-
+    #
     history = model.fit_generator(generator=train_batch_generator,
-                                  steps_per_epoch=100,
+                                  steps_per_epoch=10,
                                   epochs=10,
                                   verbose=1,
                                   validation_data=test_batch_generator,
@@ -196,40 +193,42 @@ def train(train_tfrecord_path,test_tfrecord_path,num_classes=10):
 
 def predict():
     # 读取保存的模型参数
-    new_model = VGG16(classes=10)
+
+    new_model = VGGNet16(classes=20)
     # new_model.train_on_batch(x_train[:1], y_train[:1])
-    new_model.load_weights('VGGNetDense')
-    test_generator = loadClassifyTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord",repeat=False)
+    new_model.load_weights('checkpoints/voc_vgg16net')
+    test_generator = loadClassifyTFRecord("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord",repeat=False)
     num = 0
     correct = 0
-    while (True):
-        try:
-            x_test, y_test = next(test_generator)
-            new_predictions = new_model.predict(x_test)
-            for i in range(new_predictions.shape[0]):
-                num = num + 1
-                # print(np.argmax(new_predictions[i]),y_test[i].numpy())
-                if np.argmax(new_predictions[i]) == y_test[i].numpy():
-                    correct = correct + 1
-
-        except:
-            break
+    for test_images, test_labels in test_generator:
+        new_predictions = new_model.predict(test_images)
+        for i in range(new_predictions.shape[0]):
+            num = num + 1
+            print(np.argmax(new_predictions[i]),test_labels[i].numpy())
+            if np.argmax(new_predictions[i]) == test_labels[i].numpy():
+                correct = correct + 1
     print(correct/float(num))
 
 
-def train2():
-    model = VGG16(classes=10)
-    train_ds = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_train.tfrecord",repeat=False)
-    test_ds = LoadTFRecord("/home/jade/Data/TFRecords/sdfgoods10_224_test.tfrecord",repeat=False)
+def train2(train_path,test_path,num_classes=10,datasetname='voc'):
+
+    train_num = int(len(GetLabelAndImagePath("/home/jade/Data/VOCdevkit/Classify")) * 0.8)
+    test_num = int(len(GetLabelAndImagePath("/home/jade/Data/VOCdevkit/Classify")) * 0.2)
+    batch_size = 32
+    model = VGGNet16(classes=num_classes)
+    model.load_weights("checkpoints/voc_vgg16net_2019-08-15")
+
+
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
-    optimizer = tf.keras.optimizers.Adam(0.0001)
+    optimizer = tf.keras.optimizers.Adam(0.00001)
 
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
     test_loss = tf.keras.metrics.Mean(name='test_loss')
     test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
+
 
     @tf.function
     def train_step(images, labels):
@@ -250,33 +249,57 @@ def train2():
         test_loss(t_loss)
         test_accuracy(labels, predictions)
 
-    EPOCHS = 10
-
+    EPOCHS = 50
+    print("start training ....")
     for epoch in range(EPOCHS):
+        train_ds = LoadTFRecord(train_path, batch_size=batch_size, repeat=False,is_train=True)
+        test_ds = LoadTFRecord(test_path, batch_size=batch_size, repeat=False,is_train=False)
+        train_processbar = ProcessBar()
+        train_processbar.count = int(train_num / batch_size)
         for images, labels in train_ds:
+            train_processbar.start_time = time.time()
             train_step(images, labels)
-            template = 'Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}'
-            print(template.format(epoch + 1,
-                              train_loss.result(),
-                              train_accuracy.result() * 100,
-                              test_loss.result(),
-                              test_accuracy.result() * 100))
+            template = 'Training Epoch: {} || Loss: {} || Accuracy: {}%'
+            NoLinePrint(template.format(epoch + 1,
+                              format(train_loss.result(),'.2f'),
+                              format(train_accuracy.result()* 100, '.2f')),train_processbar)
 
-        for test_images, test_labels in test_ds:
-            test_step(test_images, test_labels)
+        print("")
+        if (epoch+1) % 10 == 0 and epoch !=0:
+            test_processbar = ProcessBar()
+            test_processbar.count = int(test_num / batch_size)
+            for test_images, test_labels in test_ds:
+                test_step(test_images, test_labels)
+                test_processbar.start_time = time.time()
+                template = 'Testing  Epoch: {} || Loss: {} || Accuracy: {}%'
+                NoLinePrint(template.format(epoch + 1,
+                                            format(test_loss.result(), '.2f'),
+                                            format(test_accuracy.result() * 100, '.2f')), test_processbar)
 
+            print("")
 
-
+    CreateSavePath("checkpoints")
+    model.summary()
+    model.save_weights('checkpoints/'+datasetname+'_vgg16net'+"_"+GetToday(), save_format='tf')
 
 
 
 
 
 if __name__ == '__main__':
+    train2("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord","/home/jade/Data/VOCdevkit/TFRecords/VOC_test.tfrecord",20)
+    # train_ds = LoadTFRecord("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord",repeat=False)
+    # for i in range(10):
+    #     for images, labels in train_ds:
+    #         print("Load dataset ...")
+
+
+    # train2()
+    # predict()
     #ResizeClassifyDataset("/home/jade/Data/VOCdevkit/Classify",224)
     #VOCTOClassify("/media/jade/119f84e1-83d3-44cc-98c5-b52551f23158/home/jade/Data/VOCdevkit/VOC2012")
     #XMLTOPROTXT("/home/jade/Data/VOCdevkit/voc.xlsx","VOC")
-    #createTFRecord("/home/jade/Data/VOCdevkit/Classify_resize","VOC")
-    train("/home/jade/Data/VOCdevkit/TFRecords/VOC_train.tfrecord","/home/jade/Data/VOCdevkit/TFRecords/VOC_test.tfrecord",num_classes=20)
-    # predict()
-    # predict()
+    #createTFRecord("/home/jade/Data/VOCdevkit/Classify_resize","VOC","/home/jade/Data/VOCdevkit/VOC.prototxt")
+    #train("/home/jade/Data/sdfgoods/TFRecords/sdfgoods10_224_train.tfrecord","/home/jade/Data/sdfgoods/TFRecords/sdfgoods10_224_test.tfrecord",num_classes=10)
+
+    #predict()
