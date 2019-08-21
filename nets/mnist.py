@@ -4,23 +4,44 @@ import tensorflow as tf
 
 from tensorflow.python.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.python.keras import Model
-from tensorflow.python.keras.applications import VGG16
-from datasetopeation.jadeClassifyTFRecords import LoadClassifyTFRecord
-model = VGG16()
+
+mnist = tf.keras.datasets.mnist
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+# Add a channels dimension
+x_train = x_train[..., tf.newaxis]
+x_test = x_test[..., tf.newaxis]
+class MyModel(Model):
+  def __init__(self):
+    super(MyModel, self).__init__()
+    self.conv1 = Conv2D(32, 3, activation='relu')
+    #self.flatten = Flatten()
+    self.conv2 = Conv2D(64,3,activation='relu')
+
+    self.conv3 = Conv2D(128, (24, 24), padding="valid", activation='relu', name='conv3')
+    self.conv4 = Conv2D(128, (1, 1), activation='relu', name='conv4')
+    self.conv5 = Conv2D(10, (1, 1), padding='same', activation=None, name='conv5')
+
+  def call(self, x):
+    x = self.conv1(x)
+    x = self.conv2(x)
+    x = self.conv3(x)
+    x = self.conv4(x)
+    x = self.conv5(x)
+    return x
+
+model = MyModel()
+train_ds = tf.data.Dataset.from_tensor_slices(
+    (x_train, y_train)).shuffle(10000).batch(32)
+test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(32)
 
 
-def loadData(train_path,test_path,batch_size):
-  train_ds = LoadClassifyTFRecord(train_path, batch_size, shuffle=True, repeat=False, is_train=True)
-  test_ds = LoadClassifyTFRecord(test_path,batch_size, shuffle=True, repeat=False, is_train=False)
-  return train_ds, test_ds
-
-train_ds,test_ds = loadData("/home/jade/Data/sdfgoods/TFRecords/sdfgoods_train.tfrecord","/home/jade/Data/sdfgoods/TFRecords/sdfgoods_test.tfrecord",32)
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
-
-
-
 optimizer = tf.keras.optimizers.Adam()
+
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 

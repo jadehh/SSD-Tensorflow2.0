@@ -10,7 +10,7 @@ from tensorflow.python.keras import models
 from tensorflow.python.keras.layers import Input
 from tensorflow.python.keras.callbacks import LearningRateScheduler
 from tensorflow.python.keras.applications import VGG16
-from nets.vgg import VGGNet16
+from nets.vgg import VGGNet16,VGGNetConv
 from jade import *
 from datasetopeation.jadeClassifyTFRecords import LoadClassifyTFRecord
 class TrainModel():
@@ -26,21 +26,21 @@ class TrainModel():
         self.train_num = int(len(GetLabelAndImagePath(args.classify_path)) * 0.9 / self.batch_size)
         self.test_num = int(len(GetLabelAndImagePath(args.classify_path)) * 0.1 / self.batch_size)
         self.epochs = 50
-        self.learning_rate = 0.00001
+        self.learning_rate = 0.1
         self.init_net()
         self.init_loss()
 
     def init_net(self):
         if self.model_name == "vgg":
-            self.model = VGGNet16(self.num_classes)
+            self.model = VGGNetConv(self.num_classes)
             self.model.build(input_shape=(self.batch_size,224,224,3))
-        if self.checkpoint_path:
-            self.model.load_weights(self.checkpoint_path)
+        # if self.checkpoint_path:
+        #     self.model.load_weights(self.checkpoint_path)
 
     def init_loss(self):
         self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
-        self.optimizer = tf.keras.optimizers.Adam()
+        self.optimizer = tf.keras.optimizers.SGD()
 
         self.train_loss = tf.keras.metrics.Mean(name='train_loss')
         self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
@@ -62,9 +62,9 @@ class TrainModel():
         t_loss = self.loss_object(labels, predictions)
         self.test_loss(t_loss)
         self.test_accuracy(labels, predictions)
-    def loadData(self):
-        train_ds = LoadClassifyTFRecord(self.train_path, self.batch_size, shuffle=True, repeat=False, is_train=True)
-        test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=False,is_train=False)
+    def loadData(self,repeat=False):
+        train_ds = LoadClassifyTFRecord(self.train_path, self.batch_size, shuffle=True, repeat=repeat, is_train=True)
+        test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=repeat,is_train=False)
         return train_ds,test_ds
 
 
@@ -115,27 +115,33 @@ class TrainModel():
                                         format(self.test_accuracy.result() * 100, '.2f')), test_processbar)
     def lr_schedule(self,epoch):
         if epoch < 10:
-            return 0.0001
+            return 0.001
         elif epoch < 50:
-            return 0.00001
+            return 0.0001
         else:
-            return 0.000001
+            return 0.00001
 
     def keras_train(self):
-        train_ds,test_ds = self.loadData()
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.001),
+        train_ds,test_ds = self.loadData(repeat=True)
+        self.model.compile(optimizer="adam",
                       loss="sparse_categorical_crossentropy",
                       metrics=["accuracy"])
         learning_rate_schedule = LearningRateScheduler(schedule=self.lr_schedule,verbose=1)
         callbacks = [learning_rate_schedule]
         #
-        history = self.model.fit_generator(generator=train_ds,
-                                      steps_per_epoch=self.train_num,
-                                      epochs=15,
-                                      validation_data=test_ds,
-                                      validation_steps=self.test_num,
-                                      callbacks=callbacks,
-                                      initial_epoch=0)
+        # history = self.model.fit_generator(generator=train_ds,
+        #                               steps_per_epoch=self.train_num,
+        #                               epochs=self.epochs,
+        #                               validation_data=test_ds,
+        #                               validation_steps=self.test_num,
+        #                               callbacks=callbacks,
+        #                               initial_epoch=0)
+        self.model.fit(train_ds,
+                       test_ds,
+                       batch_size=self.batch_size,
+                       callbacks=callbacks,
+                       shuffle=True,
+                       epochs=self.epochs)
         self.model.summary()
         save_path = CreateSavePath("/home/jade/Models/"+self.dataset_name+"Classify")
         self.model.save_weights(os.path.join(save_path, self.dataset_name + '_vgg16net' + "_" + GetToday()+".h5"))
