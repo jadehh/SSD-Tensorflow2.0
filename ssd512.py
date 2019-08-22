@@ -17,7 +17,7 @@ class SSD512(Model):
         super(SSD512, self).__init__()
         self.vgg_base = VGGBase()
         self.pool5 = MaxPool2D((3, 3), strides=(1, 1), padding="same", name="pool5")  # pool5层与vgg 有点区别
-        # 在conv5_3特征图上做扩张卷积，此时扩张率为6的卷积，感受野相当于9*9
+        # 在conv5_3特征图上做扩张卷积，此时扩张率为6的卷积，感受野相当于9*9，同时可以减少参数
         self.fc6 = Conv2D(1024, (3, 3), dilation_rate=(6, 6), activation='relu', padding='same', name='fc6')
         self.fc7 = Conv2D(1024, (1, 1), activation='relu', padding='same', name="fc7")
 

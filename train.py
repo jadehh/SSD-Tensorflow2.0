@@ -8,7 +8,7 @@ from ssd512 import SSD512
 import tensorflow as tf
 from keras_loss_function.keras_ssd_loss import SSDLoss
 from tensorflow.python.keras.callbacks import LearningRateScheduler
-from datasetopeation.jadeClassifyTFRecords import LoadClassifyTFRecord
+from datasetopeation.jadeVocTFRecord import LoadVOCTFRecord
 
 
 
@@ -40,8 +40,8 @@ class Train():
             return 0.00001
 
     def loadData(self,repeat=False):
-        train_ds = LoadClassifyTFRecord(self.train_path, self.batch_size, shuffle=True, repeat=repeat, is_train=True)
-        test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=repeat,is_train=False)
+        train_ds = LoadVOCTFRecord(self.train_path, self.batch_size, shuffle=False, repeat=repeat, is_train=True)
+        test_ds = LoadVOCTFRecord(self.test_path,self.batch_size,shuffle=False,repeat=repeat,is_train=False)
         return train_ds,test_ds
 
     def train(self):
@@ -69,9 +69,9 @@ if __name__ == '__main__':
     paraser.add_argument("--variances", default= [0.1,0.1,0.2,0.2], help="variances")
     paraser.add_argument("--coords", default="centroids", help="coords")
     paraser.add_argument("--normalize_coors", default=True, help="normalize_coors")
-    paraser.add_argument("--train_path", default="/home/jade/Data/sdfgoods/TFRecords/sdfgoods_train.tfrecord",
+    paraser.add_argument("--train_path", default="/home/jade/Data/Hand_Gesture/TFRecords/UA_Handgesture_train.tfrecord",
                          help="train_path")
-    paraser.add_argument("--test_path", default="/home/jade/Data/sdfgoods/TFRecords/sdfgoods_test.tfrecord",
+    paraser.add_argument("--test_path", default="/home/jade/Data/Hand_Gesture/TFRecords/UA_Handgesture_test.tfrecord",
                          help="test_path")
     paraser.add_argument("--batch_size", default=32, help="batch_size")
     args = paraser.parse_args()
