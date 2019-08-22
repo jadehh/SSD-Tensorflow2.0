@@ -8,7 +8,7 @@ from jade import *
 
 
 class SSDDecoder():
-    def __init__(self, proto_txt_path="/home/jade/Data/VOCdevkit/VOC.prototxt"):
+    def __init__(self, proto_txt_path="/Users/jiandehui/data/VOCdevkit/VOC.prototxt"):
         self.categorties, self.classes = ReadProTxt(proto_txt_path)
         self.num_classes = len(self.classes)
 
@@ -34,8 +34,8 @@ class SSDDecoder():
             class_id = np.argmax(label[i, 0:21])
             predic_bboxes = label[i, 21:25]
             anchor_bboxes = label[i, 25:29]
-            print(predic_bboxes)
-            print(anchor_bboxes)
+            #print(predic_bboxes)
+            #print(anchor_bboxes)
             variances = label[i, 29:33]
             gt_bboxes_xy = predic_bboxes[0:2] * variances[0:2] * anchor_bboxes[2:4] + anchor_bboxes[0:2]
             gt_bboxes_wh = np.exp(predic_bboxes[2:4] * variances[2:4]) * anchor_bboxes[2:4]
@@ -44,12 +44,14 @@ class SSDDecoder():
             anchor_bboxes_wh = anchor_bboxes[2:4]
             anchor_bboxes = np.concatenate(
                 [anchor_bboxes_xy - 1 / 2 * anchor_bboxes_wh, anchor_bboxes_xy + 1 / 2 * anchor_bboxes_wh])
-            print(anchor_bboxes)
+            #print(anchor_bboxes)
             gt_image = CVShowBoxes(image, [gt_bboxes], waitkey=-1)
             anchor_image = CVShowBoxes(image, [anchor_bboxes], waitkey=-1)
-            cv2.imshow("gt_image", gt_image)
-            cv2.imshow("anchor_image", anchor_image)
-            cv2.waitKey(0)
+            if class_id != 0:
+                cv2.imwrite("target_GT_images/"+str(i)+".jpg",gt_image)
+                cv2.imwrite("target_ANCHOR_images/" + str(i) + ".jpg", anchor_image)
+            cv2.imwrite("GT_images/"+str(i)+".jpg",gt_image)
+            cv2.imwrite("ANCHOR_images/" + str(i) + ".jpg", anchor_image)
             # print(label[i,0:21])
             print(self.classes[class_id])
 
