@@ -43,34 +43,42 @@ ssd 对 vgg 做了一点变化
 
 ![38*38 的 anchor](https://raw.githubusercontent.com/jadehh/SSD-Tensorflow2.0/master/gif/anchor_38.gif)
 
-anchor 尺寸的大小为 
+大特征图检测小物体，因为此时的anchor宽和高比较小,
+anchor 高和宽尺寸大小为
 ```
- 大特征图检测小物体，因为此时的anchor 宽和高比较小
- 参数为 scale 和 aspect_ratios 
- scale 为 0.1 aspect_ratios = (1,2,0.5)
- 中心点的坐标为 (根据offset_width 和 step_width = 300/38=8)
- (4,12,20, ........) 一共有38 * 38 个 中心坐标
- np.linspace(offset_width * step_width, (offset_width + feature_map_width - 1) * step_width,
+(300*0.1,300*0.1)
+sqrt(0.1*0.2) * 300, sqrt(0.1*0.2) * 300
+( 0.1 * 300 * np.sqrt(2)， 0.1 * 300 / np.sqrt(2),)
+( 0.1 * 300 * np.sqrt(0.5)， 0.1 * 300 / np.sqrt(0.5),)
+
+(0.1,           0.1）
+(0.14142136,0.14142136）
+(0.14142136，0.07071068)
+(0.07071068，0.14142136)
+``` 
+anchor 中心点坐标(x,y),根据offset_width 和 step_width = 300/38=8
+
+计算公式
+```
+ 
+   np.linspace(offset_width * step_width, (offset_width + feature_map_width - 1) * step_width,
                          feature_map_width)
- 高和宽尺寸大小为，  
- (300*0.1,300*0.1)
- sqrt(0.1*0.2) * 300, sqrt(0.1*0.2) * 300
- (0.1 * 300 / np.sqrt(2), 0.1 * 300 * np.sqrt(2))
- (0.1 * 300 / np.sqrt(0.5), 0.1 * 300 * np.sqrt(0.5))
 
-（0.1,           0.1）
-（0.14142136,0.14142136）
- (0.14142136，0.07071068)
- (0.07071068，0.14142136)
+   (4,12,20, ........) 一共有38 * 38 个 中心坐标
+
 
 ```
+
+
 
 
 在19*19特征图中，以每个点为中心移动框，还原到原图中如下图,
 
 ![19*19 的 anchor](https://raw.githubusercontent.com/jadehh/SSD-Tensorflow2.0/master/gif/anchor_19.gif)
 
-在SSD中priorbox的个数与位置是固定的
+在SSD中priorbox的个数与位置是固定的，所以需要通过一个预测值反推出真实框。
+
+整个网络坐标的训练就是为了训练这个预测框
 
 
 预测框 表达的是真实框与Anchor框之间的关系，公式如下
