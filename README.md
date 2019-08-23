@@ -41,7 +41,7 @@ ssd 对 vgg 做了一点变化
 
 在38*38特征图中，以每个点为中心移动 还原到原图中如下图
 
-！[38*38 的 anchor](https://gitee.com/jadehh_743/SSD-Tensorflow2.0/raw/master/gif/anchor_38.gif)
+![38*38 的 anchor](https://gitee.com/jadehh_743/SSD-Tensorflow2.0/raw/master/gif/anchor_38.gif)
 
 
 在SSD中priorbox的个数与位置是固定的
