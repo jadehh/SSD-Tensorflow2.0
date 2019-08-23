@@ -58,7 +58,7 @@ if __name__ == '__main__':
     import argparse
     paraser = argparse.ArgumentParser(description="SSD")
     paraser.add_argument("--num_classes", default=10,help="num_classes")
-    paraser.add_argument("--image_size", default=[512,512], help="image_size")
+    paraser.add_argument("--image_size", default=[300,300], help="image_size")
     paraser.add_argument("--this_scale", default=[0.07,0.15,0.33,0.51,0.69,0.87,1.05], help="this_scale")
     paraser.add_argument("--aspect_ratios", default=[[1.0,2.0,0.5], [1.0,2.0,0.5,3.0,1.0/3.0], [1.0,2.0,0.5,3.0,1.0/3.0],
                                         [1.0,2.0,0.5,3.0,1.0/3.0], [1.0,2.0,0.5],[1.0,2.0,0.5]], help="aspect_ratios")

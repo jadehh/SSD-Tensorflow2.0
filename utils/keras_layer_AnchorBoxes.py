@@ -133,7 +133,7 @@ class AnchorBoxes(Layer):
         boxes_tensor[:, :, :, 2] = w_h_list[:, 0]
         boxes_tensor[:, :, :, 3] = w_h_list[:, 1]
 
-        boxes_tensor = convert_coordinates(boxes_tensor,start_index = 0,conversion="centroid2corners")
+        boxes_tensor = convert_coordinates(boxes_tensor,start_index = 0,conversion="centroids2corners")
         if self.clip_boxes:
             x_coords = boxes_tensor[:,:,:,[0,2]]
             x_coords[x_coords >= self.img_width] = self.img_width - 1

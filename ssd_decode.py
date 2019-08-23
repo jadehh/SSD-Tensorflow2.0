@@ -70,8 +70,8 @@ if __name__ == '__main__':
     image_path_list = GetAllImagesPath("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/")
     image_list = []
     for i in range(len(image_path_list)):
-        if i < 38*38*4 and i < 100:
+        if i > (38*38*4+ 19 * 19 * 6)and i < (38*38*4+ 19 * 19 * 6) + 100:
             image_list.append(os.path.join("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/",str(i)+".jpg"))
-    compose_gif(image_list,"gif/anchor_38.gif",fps=10)
+    compose_gif(image_list,"gif/anchor_19.gif",fps=10)
 
 
