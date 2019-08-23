@@ -12,7 +12,8 @@ from tensorflow.python.keras.engine import Layer
 #自定义layer层，会有正向传播，和反向传播
 class L2Normalization(Layer):
     """
-
+     在深度神经网络中，偶尔会出现多个量纲不同的向量拼接在一起的情况，
+     此时就可以使用L2归一化统一拼接后的向量的量纲，使得网络能够快速收敛。
     """
     def __init__(self,gamma_init = 20, **kwargs):
         self.axis = 3

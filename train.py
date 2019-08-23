@@ -9,7 +9,7 @@ import tensorflow as tf
 from keras_loss_function.keras_ssd_loss import SSDLoss
 from tensorflow.python.keras.callbacks import LearningRateScheduler
 from datasetopeation.jadeVocTFRecord import LoadVOCTFRecord
-
+from utils.ssd_input_encode import SSDInputEncoded
 
 
 
@@ -22,6 +22,7 @@ class Train():
         self.test_path = args.test_path
         self.epochs = 100
         self.init_net()
+        self.encode()
 
     def init_net(self):
         self.model = SSD512(self.args)
@@ -40,19 +41,29 @@ class Train():
             return 0.00001
 
     def loadData(self,repeat=False):
-        train_ds = LoadVOCTFRecord(self.train_path, self.batch_size, shuffle=False, repeat=repeat, is_train=True)
-        test_ds = LoadVOCTFRecord(self.test_path,self.batch_size,shuffle=False,repeat=repeat,is_train=False)
+        train_ds = LoadVOCTFRecord(self.train_path, 1, shuffle=False, repeat=repeat, is_train=True)
+        test_ds = LoadVOCTFRecord(self.test_path,1,shuffle=False,repeat=repeat,is_train=False)
         return train_ds,test_ds
-
+    def encode(self):
+        predictor_sizes = [(38,38),(19,19),(10,10),(5,5),(3,3),(1,1)]
+        self.ssdEncode = SSDInputEncoded(self.args.image_size[0],self.args.image_size[1],self.args.num_classes,
+                                         predictor_sizes,aspect_ratios_per_layer=self.args.aspect_ratios)
     def train(self):
+
         train_ds, test_ds = self.loadData(repeat=True)
         learning_rate_schedule = LearningRateScheduler(schedule=self.lr_schedule, verbose=1)
         callbacks = [learning_rate_schedule]
-        self.model.fit(train_ds,
-                       test_ds,
-                       callbacks=callbacks,
-                       shuffle=True,
-                       epochs=self.epochs)
+        for (image,label) in train_ds:
+            label_np = label.numpy()
+            encode_label = self.ssdEncode.encode(label.numpy())
+            print(encode_label)
+
+
+        # self.model.fit(train_ds,
+        #                test_ds,
+        #                callbacks=callbacks,
+        #                shuffle=True,
+        #                epochs=self.epochs)
 
 if __name__ == '__main__':
     import argparse

@@ -5,7 +5,7 @@ from tensorflow.python.keras.layers import *
 from utils.keras_layer_l2Normalization import L2Normalization
 from utils.keras_layer_AnchorBoxes import AnchorBoxes
 from utils.keras_layer_boxes import Anchors
-
+from datasetopeation.jadeVocTFRecord import LoadVOCTFRecord
 anchors = Anchors(args=None)
 n_boxes = anchors.layer_boxes()
 
@@ -140,6 +140,7 @@ class SSD512(Model):
         return predictions
 
 
+
 if __name__ == '__main__':
     import argparse
     paraser = argparse.ArgumentParser(description="SSD")
@@ -158,6 +159,7 @@ if __name__ == '__main__':
     args = paraser.parse_args()
     ssd512 = SSD512(args)
     input = tf.zeros(shape=[32,300,300,32],dtype=tf.float32)
+    ssd512.train()
     x = ssd512.predict(input)
 
 
