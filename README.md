@@ -36,24 +36,22 @@ ssd 对 vgg 做了一点变化
 
 可以让卷积网络在一张更大的输入图片上滑动，得到每个区域的输出（这样就突破了输入尺寸的限制）。
 
-###Anchor 层 
+### Anchor 层 
 一共使用 38×38×4 + 19×19×6+ 10×10×6 + 5×5×6 + 3×3×4+ 1×1×4 = 8732
 在SSD中priorbox的个数与位置是固定的
 在第一个特征图上，相当于使用中心点为(x+300/38,y+300/38)
-
-    # 编码公式
-    """
+```
+ # 编码公式
     cx(predict) = (cx(gt) - cx(anchor)) / w(anchor) / cx_variance
     cy(predict) = (cy(gt) - cy(anchor)) / h(anchor) / cy_variance
     cw(predict)= ln(w(gt) / w(anchor)) / w_variance
     ch(predict) = ln(h(gt) / h(anchor)) / h_variance
-    """
 
     # 解码公式
-    """
     cx(gt) = cx(predict) * cx_variance * w(anchor) + cx(anchor)
     cy(gt) = cy(predict) * cy_variance * h(anchor) + cy(anchor)
-    
     w(gt) = exp(cw(predict)*w_variance)*w(anchor)
     h(gt) = exp(ch(predict)*h_variance)*h(anchor)
-    """
+
+```
+   
