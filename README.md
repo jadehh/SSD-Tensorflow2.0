@@ -42,6 +42,7 @@ ssd 对 vgg 做了一点变化
 在38*38特征图中，以每个点为中心移动框，还原到原图中如下图,每个点有四种组合方式
 
 ![38*38 的 anchor](https://raw.githubusercontent.com/jadehh/SSD-Tensorflow2.0/master/gif/anchor_38.gif)
+
 anchor 尺寸的大小为 
 ```
  大特征图检测小物体，因为此时的anchor 宽和高比较小
@@ -52,10 +53,11 @@ anchor 尺寸的大小为
  np.linspace(offset_width * step_width, (offset_width + feature_map_width - 1) * step_width,
                          feature_map_width)
  高和宽尺寸大小为，  
-(300*0.1,300*0.1)
+ (300*0.1,300*0.1)
  sqrt(0.1*0.2) * 300, sqrt(0.1*0.2) * 300
  (0.1 * 300 / np.sqrt(2), 0.1 * 300 * np.sqrt(2))
  (0.1 * 300 / np.sqrt(0.5), 0.1 * 300 * np.sqrt(0.5))
+
 （0.1,           0.1）
 （0.14142136,0.14142136）
  (0.14142136，0.07071068)
@@ -69,6 +71,9 @@ anchor 尺寸的大小为
 ![19*19 的 anchor](https://raw.githubusercontent.com/jadehh/SSD-Tensorflow2.0/master/gif/anchor_19.gif)
 
 在SSD中priorbox的个数与位置是固定的
+
+
+预测框 表达的是真实框与Anchor框之间的关系，公式如下
 ```
  # 编码公式
     cx(predict) = (cx(gt) - cx(anchor)) / w(anchor) / cx_variance
@@ -76,11 +81,16 @@ anchor 尺寸的大小为
     cw(predict)= ln(w(gt) / w(anchor)) / w_variance
     ch(predict) = ln(h(gt) / h(anchor)) / h_variance
 
+```
+
+由预测框的值可以反推出真实框的值，
+
+SSD经过网络求得的结果是预测框的值，所以需要解码
+```
     # 解码公式
     cx(gt) = cx(predict) * cx_variance * w(anchor) + cx(anchor)
     cy(gt) = cy(predict) * cy_variance * h(anchor) + cy(anchor)
     w(gt) = exp(cw(predict)*w_variance)*w(anchor)
     h(gt) = exp(ch(predict)*h_variance)*h(anchor)
-
 ```
    
