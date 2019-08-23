@@ -8,7 +8,7 @@ from jade import *
 
 
 class SSDDecoder():
-    def __init__(self, proto_txt_path="/Users/jiandehui/data/VOCdevkit/VOC.prototxt"):
+    def __init__(self, proto_txt_path="/home/jade/Data/VOCdevkit/VOC.prototxt"):
         self.categorties, self.classes = ReadProTxt(proto_txt_path)
         self.num_classes = len(self.classes)
 
@@ -30,6 +30,7 @@ class SSDDecoder():
     """
 
     def decode(self, image, label):
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         for i in range(label.shape[0]):
             class_id = np.argmax(label[i, 0:21])
             predic_bboxes = label[i, 21:25]
@@ -45,11 +46,12 @@ class SSDDecoder():
             anchor_bboxes = np.concatenate(
                 [anchor_bboxes_xy - 1 / 2 * anchor_bboxes_wh, anchor_bboxes_xy + 1 / 2 * anchor_bboxes_wh])
             #print(anchor_bboxes)
+
             gt_image = CVShowBoxes(image, [gt_bboxes], waitkey=-1)
             anchor_image = CVShowBoxes(image, [anchor_bboxes], waitkey=-1)
             if class_id != 0:
-                cv2.imwrite("target_GT_images/"+str(i)+".jpg",gt_image)
-                cv2.imwrite("target_ANCHOR_images/" + str(i) + ".jpg", anchor_image)
+                cv2.imwrite("Target_Anchor_images/"+str(i)+".jpg",anchor_image)
+                cv2.imwrite("Target_GT_Images/" + str(i) + ".jpg", gt_image)
             cv2.imwrite("GT_images/"+str(i)+".jpg",gt_image)
             cv2.imwrite("ANCHOR_images/" + str(i) + ".jpg", anchor_image)
             # print(label[i,0:21])
@@ -57,9 +59,19 @@ class SSDDecoder():
 
 
 if __name__ == '__main__':
+
     images = np.load("npy/image.npy")
     labels = np.load("npy/label.npy")
     image = images[6, :, :, :]
     label = labels[6, :, :]
     ssdDecoder = SSDDecoder()
     ssdDecoder.decode(image, label)
+
+    image_path_list = GetAllImagesPath("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/")
+    image_list = []
+    for i in range(len(image_path_list)):
+        if i < 38*38*4 and i < 100:
+            image_list.append(os.path.join("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/",str(i)+".jpg"))
+    compose_gif(image_list,"gif/anchor_38.gif",fps=10)
+
+
