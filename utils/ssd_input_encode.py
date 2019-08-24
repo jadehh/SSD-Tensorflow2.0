@@ -238,7 +238,8 @@ class SSDInputEncoded:
             labels_one_hot = np.concatenate([class_one_hot,labels[:,[xmin,ymin,xmax,ymax]]],axis=-1)
 
             #[[x1,y1,x2,y2],[x3,y3,x4,y4]] 与 所有的anchor 框做IOU对比
-            similarities = iou(labels[:,[xmin,ymin,xmax,ymax]],y_encoded[i,:,-12:-8],coords=self.coords,mode='outer_product',border_pixels=self.border_pixels)
+            print(y_encoded[i,:,self.n_classes:self.n_classes+4])
+            similarities = iou(labels[:,[xmin,ymin,xmax,ymax]],y_encoded[i,:,self.n_classes:self.n_classes],coords=self.coords,mode='outer_product',border_pixels=self.border_pixels)
 
             bipartite_matches = match_bipartite_greedy(weight_martix=similarities)
 
