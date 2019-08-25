@@ -101,4 +101,14 @@ SSD经过网络求得的结果是预测框的值，所以需要解码
     w(gt) = exp(cw(predict)*w_variance)*w(anchor)
     h(gt) = exp(ch(predict)*h_variance)*h(anchor)
 ```
+
+SSD Encode代码
+```
+python utils/ss_input_encode.py
+encode 的结果为 [self.num_classes+1,predictions,anchor_boxes,variances]
+predictions = [p_xmin,p_ymin,p_xmax,p_ymax]
+anchor_boxes = [a_xmin,a_ymin,a_xmax,a_ymax], 固定值
+variances = [0.1,0.1,0.2,0.2]
+```
+
    
