@@ -14,7 +14,7 @@ def match_bipartite_greedy(weight_martix):
     :return:
     """
 
-    weight_martix = np.concatenate(weight_martix)
+    weight_martix = np.copy(weight_martix)
 
     num_ground_truth_boxes = weight_martix.shape[0]  #真实标签目标框个数
 
@@ -34,9 +34,9 @@ def match_bipartite_greedy(weight_martix):
 
         anchor_index = anchor_indices[grount_truth_index]
 
-        matches[grount_truth_index] = anchor_indices
+        matches[grount_truth_index] = anchor_index
 
-        weight_martix[grount_truth_index] == 0  #将那一行都为0
+        weight_martix[grount_truth_index] = 0  #将那一行都为0
         weight_martix[:,anchor_index] = 0  # 将所有anchor_index 所有值都为0
 
 

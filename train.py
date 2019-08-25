@@ -10,6 +10,7 @@ from keras_loss_function.keras_ssd_loss import SSDLoss
 from tensorflow.python.keras.callbacks import LearningRateScheduler
 from datasetopeation.jadeVocTFRecord import LoadVOCTFRecord
 from utils.ssd_input_encode import SSDInputEncoded
+import numpy as np
 
 
 
@@ -47,23 +48,26 @@ class Train():
     def encode(self):
         predictor_sizes = [(38,38),(19,19),(10,10),(5,5),(3,3),(1,1)]
         self.ssdEncode = SSDInputEncoded(self.args.image_size[0],self.args.image_size[1],self.args.num_classes,
-                                         predictor_sizes,aspect_ratios_per_layer=self.args.aspect_ratios)
+                                         predictor_sizes,aspect_ratios_per_layer=self.args.aspect_ratios,
+                                         steps=self.args.this_steps,offsets=self.args.this_offsets)
     def train(self):
 
-        train_ds, test_ds = self.loadData(repeat=True)
+        train_ds, test_ds = self.loadData(repeat=False)
         learning_rate_schedule = LearningRateScheduler(schedule=self.lr_schedule, verbose=1)
         callbacks = [learning_rate_schedule]
+
+
+        train_dataset = []
         for (image,label) in train_ds:
             label_np = label.numpy()
             encode_label = self.ssdEncode.encode(label.numpy())
-            print(encode_label)
+            train_dataset.append((image,encode_label))
 
-
-        # self.model.fit(train_ds,
-        #                test_ds,
-        #                callbacks=callbacks,
-        #                shuffle=True,
-        #                epochs=self.epochs)
+        train_dataset = np.array(train_dataset)
+        self.model.fit(train_dataset,
+                       callbacks=callbacks,
+                       shuffle=True,
+                       epochs=self.epochs)
 
 if __name__ == '__main__':
     import argparse
@@ -80,9 +84,9 @@ if __name__ == '__main__':
     paraser.add_argument("--variances", default= [0.1,0.1,0.2,0.2], help="variances")
     paraser.add_argument("--coords", default="centroids", help="coords")
     paraser.add_argument("--normalize_coors", default=True, help="normalize_coors")
-    paraser.add_argument("--train_path", default="/home/jade/Data/Hand_Gesture/TFRecords/UA_Handgesture_train.tfrecord",
+    paraser.add_argument("--train_path", default=r"F:\Data\HandGesture\TFRecords/UA_Handgesture_test.tfrecord",
                          help="train_path")
-    paraser.add_argument("--test_path", default="/home/jade/Data/Hand_Gesture/TFRecords/UA_Handgesture_test.tfrecord",
+    paraser.add_argument("--test_path", default= r"F:\Data\HandGesture\TFRecords/UA_Handgesture_test.tfrecord",
                          help="test_path")
     paraser.add_argument("--batch_size", default=32, help="batch_size")
     args = paraser.parse_args()

@@ -8,7 +8,7 @@ from jade import *
 
 
 class SSDDecoder():
-    def __init__(self, proto_txt_path="/home/jade/Data/VOCdevkit/VOC.prototxt"):
+    def __init__(self, proto_txt_path=r"F:\Data\HandGesture/hand_gesture.prototxt"):
         self.categorties, self.classes = ReadProTxt(proto_txt_path)
         self.num_classes = len(self.classes)
 
@@ -32,12 +32,12 @@ class SSDDecoder():
     def decode(self, image, label):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         for i in range(label.shape[0]):
-            class_id = np.argmax(label[i, 0:21])
-            predic_bboxes = label[i, 21:25]
-            anchor_bboxes = label[i, 25:29]
+            class_id = np.argmax(label[i, 0:self.num_classes])
+            predic_bboxes = label[i, self.num_classes:self.num_classes+4]
+            anchor_bboxes = label[i, self.num_classes+4:self.num_classes+8]
             #print(predic_bboxes)
             #print(anchor_bboxes)
-            variances = label[i, 29:33]
+            variances = label[i, self.num_classes+8:self.num_classes+12]
             gt_bboxes_xy = predic_bboxes[0:2] * variances[0:2] * anchor_bboxes[2:4] + anchor_bboxes[0:2]
             gt_bboxes_wh = np.exp(predic_bboxes[2:4] * variances[2:4]) * anchor_bboxes[2:4]
             gt_bboxes = np.concatenate([gt_bboxes_xy - 1 / 2 * gt_bboxes_wh, gt_bboxes_xy + 1 / 2 * gt_bboxes_wh])
@@ -52,26 +52,26 @@ class SSDDecoder():
             if class_id != 0:
                 cv2.imwrite("Target_Anchor_images/"+str(i)+".jpg",anchor_image)
                 cv2.imwrite("Target_GT_Images/" + str(i) + ".jpg", gt_image)
-            cv2.imwrite("GT_images/"+str(i)+".jpg",gt_image)
-            cv2.imwrite("ANCHOR_images/" + str(i) + ".jpg", anchor_image)
+            # cv2.imwrite("GT_images/"+str(i)+".jpg",gt_image)
+            # cv2.imwrite("ANCHOR_images/" + str(i) + ".jpg", anchor_image)
             # print(label[i,0:21])
             print(self.classes[class_id])
 
 
 if __name__ == '__main__':
 
-    images = np.load("npy/image.npy")
-    labels = np.load("npy/label.npy")
-    image = images[6, :, :, :]
-    label = labels[6, :, :]
+    images = np.load("np/image.npy")
+    labels = np.load("np/label.npy")
+    image = images[0, :, :, :]
+    label = labels[0, :, :]
     ssdDecoder = SSDDecoder()
     ssdDecoder.decode(image, label)
 
-    image_path_list = GetAllImagesPath("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/")
-    image_list = []
-    for i in range(len(image_path_list)):
-        if i > (38*38*4+ 19 * 19 * 6)and i < (38*38*4+ 19 * 19 * 6) + 100:
-            image_list.append(os.path.join("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/",str(i)+".jpg"))
-    compose_gif(image_list,"gif/anchor_19.gif",fps=10)
+    # image_path_list = GetAllImagesPath("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/")
+    # image_list = []
+    # for i in range(len(image_path_list)):
+    #     if i > (38*38*4+ 19 * 19 * 6)and i < (38*38*4+ 19 * 19 * 6) + 100:
+    #         image_list.append(os.path.join("/home/jade/PycharmProject/Github/SSD-Tensorflow2.0/ANCHOR_images/",str(i)+".jpg"))
+    # compose_gif(image_list,"gif/anchor_19.gif",fps=10)
 
 

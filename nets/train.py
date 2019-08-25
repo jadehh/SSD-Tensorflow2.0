@@ -62,6 +62,8 @@ class TrainModel():
         t_loss = self.loss_object(labels, predictions)
         self.test_loss(t_loss)
         self.test_accuracy(labels, predictions)
+
+
     def loadData(self,repeat=False):
         train_ds = LoadClassifyTFRecord(self.train_path, self.batch_size, shuffle=True, repeat=repeat, is_train=True)
         test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=repeat,is_train=False)
@@ -101,6 +103,8 @@ class TrainModel():
         save_path = CreateSavePath("/home/jade/Models/"+self.dataset_name+"Classify/")
         self.model.summary()
         self.model.save_weights(save_path + self.dataset_name + '_vgg16net' + "_" + GetToday(), save_format='tf')
+
+
     def evaluate(self):
         test_ds = LoadClassifyTFRecord(self.test_path,self.batch_size,shuffle=True,repeat=False,is_train=False)
 

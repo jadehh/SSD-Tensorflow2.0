@@ -238,20 +238,19 @@ class SSDInputEncoded:
             labels_one_hot = np.concatenate([class_one_hot,labels[:,[xmin,ymin,xmax,ymax]]],axis=-1)
 
             #[[x1,y1,x2,y2],[x3,y3,x4,y4]] 与 所有的anchor 框做IOU对比
-            print(y_encoded[i,:,self.n_classes:self.n_classes+4])
-            similarities = iou(labels[:,[xmin,ymin,xmax,ymax]],y_encoded[i,:,self.n_classes:self.n_classes],coords=self.coords,mode='outer_product',border_pixels=self.border_pixels)
+            similarities = iou(labels[:,[xmin,ymin,xmax,ymax]],y_encoded[i,:,self.n_classes:self.n_classes+4],coords=self.coords,mode='outer_product',border_pixels=self.border_pixels)
 
             bipartite_matches = match_bipartite_greedy(weight_martix=similarities)
 
             #IOU值最大的就是真实数据
 
-            y_encoded[i,bipartite_matches, :-8] = labels_one_hot
+            y_encoded[i,bipartite_matches, :self.n_classes+4] = labels_one_hot
 
-            similarities[:,similarities] = 0 #计算过后置位0，下一次不参与计算
+            similarities[:,bipartite_matches] = 0 #计算过后置位0，下一次不参与计算
 
             if self.matching_type == 'multi':
-                mathes = match_multi(similarities)
-                y_encoded[i, mathes[1], :-8] = labels_one_hot[mathes[0]] ##多个目标框
+                mathes = match_multi(similarities,threshold=self.pos_iou_threshold)
+                y_encoded[i, mathes[1], :self.n_classes+4] = labels_one_hot[mathes[0]] ##多个目标框
 
                 similarities[:,mathes[1]] = 0
 
@@ -262,20 +261,13 @@ class SSDInputEncoded:
             y_encoded[i,neutral_boxes,self.background_id] = 0
 
         if self.coords == 'centroids':
-            y_encoded[:,:,[-12,-11]] -= y_encoded[:,:,[-8,-7]] # cx(gt) - cx(anchor), cy(gt) - cy(anchor)
-            y_encoded[:,:,[-12,-11]] /= y_encoded[:,:,[-6,-5]] * y_encoded[:,:,[-4,-3]] # (cx(gt) - cx(anchor)) / w(anchor) / cx_variance, (cy(gt) - cy(anchor)) / h(anchor) / cy_variance
-            y_encoded[:,:,[-10,-9]] /= y_encoded[:,:,[-6,-5]] # w(gt) / w(anchor), h(gt) / h(anchor)
-            y_encoded[:,:,[-10,-9]] = np.log(y_encoded[:,:,[-10,-9]]) / y_encoded[:,:,[-2,-1]] # ln(w(gt) / w(anchor)) / w_variance, ln(h(gt) / h(anchor)) / h_variance (ln == natural logarithm)
-        elif self.coords == 'corners':
-            y_encoded[:,:,-12:-8] -= y_encoded[:,:,-8:-4] # (gt - anchor) for all four coordinates
-            y_encoded[:,:,[-12,-10]] /= np.expand_dims(y_encoded[:,:,-6] - y_encoded[:,:,-8], axis=-1) # (xmin(gt) - xmin(anchor)) / w(anchor), (xmax(gt) - xmax(anchor)) / w(anchor)
-            y_encoded[:,:,[-11,-9]] /= np.expand_dims(y_encoded[:,:,-5] - y_encoded[:,:,-7], axis=-1) # (ymin(gt) - ymin(anchor)) / h(anchor), (ymax(gt) - ymax(anchor)) / h(anchor)
-            y_encoded[:,:,-12:-8] /= y_encoded[:,:,-4:] # (gt - anchor) / size(anchor) / variance for all four coordinates, where 'size' refers to w and h respectively
-        elif self.coords == 'minmax':
-            y_encoded[:,:,-12:-8] -= y_encoded[:,:,-8:-4] # (gt - anchor) for all four coordinates
-            y_encoded[:,:,[-12,-11]] /= np.expand_dims(y_encoded[:,:,-7] - y_encoded[:,:,-8], axis=-1) # (xmin(gt) - xmin(anchor)) / w(anchor), (xmax(gt) - xmax(anchor)) / w(anchor)
-            y_encoded[:,:,[-10,-9]] /= np.expand_dims(y_encoded[:,:,-5] - y_encoded[:,:,-6], axis=-1) # (ymin(gt) - ymin(anchor)) / h(anchor), (ymax(gt) - ymax(anchor)) / h(anchor)
-            y_encoded[:,:,-12:-8] /= y_encoded[:,:,-4:] # (gt - anchor) / size(anchor) / variance for all four coordinates, where 'size' refers to w and h respectively
+
+            y_encoded[:,:,[self.n_classes,self.n_classes + 1]] -= y_encoded[:,:,[self.n_classes+4,self.n_classes+5]] # cx(gt) - cx(anchor), cy(gt) - cy(anchor)
+            y_encoded[:,:,[self.n_classes,self.n_classes + 1]] /= y_encoded[:,:,[self.n_classes+6,self.n_classes+7]] * y_encoded[:,:,[self.n_classes+8,self.n_classes+9]] # (cx(gt) - cx(anchor)) / w(anchor) / cx_variance, (cy(gt) - cy(anchor)) / h(anchor) / cy_variance
+            encode = (  y_encoded[:,:,[self.n_classes+2,self.n_classes + 3]] / y_encoded[:,:,[self.n_classes+6,self.n_classes+7]])
+            y_encoded[:,:,[self.n_classes+2,self.n_classes + 3]] /= y_encoded[:,:,[self.n_classes+6,self.n_classes+7]] # w(gt) / w(anchor), h(gt) / h(anchor)
+            encode2 = np.log(y_encoded[:,:,[self.n_classes+2,self.n_classes+3]]) / y_encoded[:,:,[self.n_classes+10,self.n_classes+11]]
+            y_encoded[:,:,[self.n_classes+2,self.n_classes + 3]] = np.log(y_encoded[:,:,[self.n_classes+2,self.n_classes+3]]) / y_encoded[:,:,[self.n_classes+10,self.n_classes+11]] # ln(w(gt) / w(anchor)) / w_variance, ln(h(gt) / h(anchor)) / h_variance (ln == natural logarithm)
 
         if diagnostics:
             # Here we'll save the matched anchor boxes (i.e. anchor boxes that were matched to a ground truth box, but keeping the anchor box coordinates).
@@ -335,7 +327,7 @@ class SSDInputEncoded:
             step_height = self.img_height / feature_maps_size[0]
             step_width = self.img_width / feature_maps_size[0]
         else:
-            if isinstance(this_steps,(list,tuple) and len(this_steps) == 2):
+            if isinstance(this_steps,(list,tuple)) and (len(this_steps) == 2):
                 step_height = this_steps[0]
                 step_width = this_steps[1]
             elif isinstance(this_steps,(int,float)):
@@ -346,7 +338,7 @@ class SSDInputEncoded:
             offset_height = 0.5
             offset_width = 0.5
         else:
-            if isinstance(this_offsets,(list,tuple) and len(this_offsets) == 2):
+            if isinstance(this_offsets,(list,tuple)) and (len(this_offsets) == 2):
                 offset_height = this_offsets[0]
                 offset_width = this_offsets[1]
             elif isinstance(this_offsets,(int,float)):
@@ -370,6 +362,9 @@ class SSDInputEncoded:
         box_tensor[:,:,:,2] = wh_list[:,0]
         box_tensor[:,:,:,3] = wh_list[:,1]
 
+
+        # set [cx,cy,w,h] to [xmin,ymin,xmax,ymax]
+        box_tensor = convert_coordinates(box_tensor, start_index=0, conversion="centroids2corners", border_pixel='half')
 
         if self.normalize_coors:
             box_tensor[:,:,:,[0,2]] /= self.img_width
@@ -403,7 +398,7 @@ class SSDInputEncoded:
         variances_tensor += self.variances
 
 
-        y_encoding_template = np.concatenate((class_tensor,boxes_tensor,variances_tensor),axis=2)
+        y_encoding_template = np.concatenate((class_tensor,boxes_tensor,boxes_tensor,variances_tensor),axis=2)
 
         if diagnostics:
             return y_encoding_template,self.centers_diag,self.wh_list_diag,self.steps_diag,self.offsets_diag
